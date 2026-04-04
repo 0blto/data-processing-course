@@ -1,0 +1,37 @@
+erDiagram
+  ACCOUNTS ||--o{ SALES_PIPELINE : "account (название компании)"
+  PRODUCTS ||--o{ SALES_PIPELINE : "product"
+  SALES_TEAMS ||--o{ SALES_PIPELINE : "sales_agent"
+
+  ACCOUNTS {
+    text account PK
+    text sector
+    int year_established
+    numeric revenue
+    int employees
+    text office_location
+    text subsidiary_of
+  }
+
+  PRODUCTS {
+    text product PK
+    text series
+    numeric sales_price
+  }
+
+  SALES_TEAMS {
+    text sales_agent PK
+    text manager
+    text regional_office
+  }
+
+  SALES_PIPELINE {
+    text opportunity_id PK
+    text sales_agent FK
+    text product FK
+    text account FK
+    text deal_stage
+    date engage_date
+    date close_date
+    numeric close_value
+  }

@@ -1,0 +1,4 @@
+secrets/gpdb_password
+conf/ssh/id_rsa
+conf/ssh/id_rsa.pub
+conf/ssh/authorized_keys

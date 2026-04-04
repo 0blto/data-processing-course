@@ -1,0 +1,4 @@
+conf/hostfile_gpinitsystem text eol=lf
+conf/6/gpinitsystem_config_no_mirrors text eol=lf
+pxf-servers/pg_crm/jdbc-site.xml text eol=lf
+master-init/*.sh text eol=lf

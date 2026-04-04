@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <property>
+    <name>jdbc.driver</name>
+    <value>org.postgresql.Driver</value>
+  </property>
+  <property>
+    <name>jdbc.url</name>
+    <value>jdbc:postgresql://postgres:5432/crm</value>
+  </property>
+  <property>
+    <name>jdbc.user</name>
+    <value>lab</value>
+  </property>
+  <property>
+    <name>jdbc.password</name>
+    <value>lab</value>
+  </property>
+</configuration>

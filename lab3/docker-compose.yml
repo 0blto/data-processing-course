@@ -1,0 +1,115 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lab_postgres
+    hostname: postgres
+    environment:
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: lab
+      POSTGRES_DB: crm
+    volumes:
+      - ./data:/import:ro
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - labnet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab -d crm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gpfdist:
+    build:
+      context: ./gpfdist
+      dockerfile: Dockerfile
+    image: lab-gpfdist:local
+    container_name: lab_gpfdist
+    hostname: gpfdist
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/load:ro
+    networks:
+      - labnet
+
+  segment1:
+    image: ${IMAGE_NAME}:${TAG}
+    container_name: segment1
+    hostname: segment1
+    command: /start_gpdb.sh "00:primary" "01:primary"
+    environment:
+      GREENPLUM_DEPLOYMENT: segment
+    volumes:
+      - ./conf/ssh/authorized_keys:/tmp/authorized_keys:ro
+    stop_grace_period: 60s
+    networks:
+      - labnet
+    healthcheck:
+      test: ["CMD-SHELL", "ss -lnt | grep -q ':22'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 40s
+
+  segment2:
+    image: ${IMAGE_NAME}:${TAG}
+    container_name: segment2
+    hostname: segment2
+    command: /start_gpdb.sh "00:primary" "01:primary"
+    environment:
+      GREENPLUM_DEPLOYMENT: segment
+    volumes:
+      - ./conf/ssh/authorized_keys:/tmp/authorized_keys:ro
+    stop_grace_period: 60s
+    networks:
+      - labnet
+    healthcheck:
+      test: ["CMD-SHELL", "ss -lnt | grep -q ':22'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 40s
+
+  master:
+    image: ${IMAGE_NAME}:${TAG}
+    container_name: master
+    hostname: master
+    ports:
+      - "${EXPOSE_MASTER_PORT}:5432"
+    environment:
+      GREENPLUM_DEPLOYMENT: master
+      GREENPLUM_PXF_ENABLE: "true"
+      GREENPLUM_GPPERFMON_ENABLE: "false"
+      GREENPLUM_DISKQUOTA_ENABLE: "false"
+      GREENPLUM_PASSWORD_FILE: /run/secrets/gpdb_password
+    secrets:
+      - gpdb_password
+    volumes:
+      - ./conf/${CONFIG_FOLDER}/gpinitsystem_config_no_mirrors:/tmp/gpinitsystem_config:ro
+      - ./conf/hostfile_gpinitsystem:/tmp/hostfile_gpinitsystem:ro
+      - ./conf/ssh:/run/lab-ssh:ro
+      - ./pxf-servers:/run/lab-pxf-servers:ro
+      - ./master-init:/docker-entrypoint-initdb.d:ro
+      - ./greenplum:/workspace/greenplum:ro
+    command:
+      - /bin/bash
+      - -lc
+      - cp /run/lab-ssh/id_rsa /home/gpadmin/.ssh/id_rsa && cp /run/lab-ssh/id_rsa.pub /home/gpadmin/.ssh/id_rsa.pub && chmod 600 /home/gpadmin/.ssh/id_rsa && chmod 644 /home/gpadmin/.ssh/id_rsa.pub && exec /start_gpdb.sh
+    depends_on:
+      segment1:
+        condition: service_healthy
+      segment2:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: on-failure:15
+    networks:
+      - labnet
+
+networks:
+  labnet:
+    driver: bridge
+
+secrets:
+  gpdb_password:
+    file: ./secrets/gpdb_password
